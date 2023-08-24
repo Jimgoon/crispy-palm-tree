@@ -29,3 +29,35 @@ label.extend([0 for i in range(12499)])
 #评论内容整合
 content=pos_list.extend(neg_list)
 content=pos_list
+
+
+
+
+
+# -*- coding: utf-8 -*-
+import os
+import codecs
+pos_location=r"C:\Users\19035\Desktop\实习\py代码\IMDB\aclImdb\train\pos"
+pos_files=os.listdir(pos_location)
+neg_location=r"C:\Users\19035\Desktop\实习\py代码\IMDB\aclImdb\train\neg"
+neg_files=os.listdir(neg_location)
+pos_all=codecs.open(r'C:\Users\19035\Desktop\实习\py代码\IMDB\aclImdb\train\pos_all.txt','a',encoding='utf8')
+neg_all=codecs.open(r'C:\Users\19035\Desktop\实习\py代码\IMDB\aclImdb\train\neg_all.txt','a',encoding='utf8')
+all=[]
+for file in pos_files:
+    whole_location=os.path.join(pos_location,file)
+    with open(whole_location,'r',encoding='utf8') as f:
+        line=f.readlines()
+        all.extend(line)
+for file in all:
+    pos_all.write(file)
+    pos_all.write('\n')
+alls=[]
+for file in neg_files:
+    whole_location=os.path.join(neg_location,file)
+    with open(whole_location,'r',encoding='utf8') as f:
+        line=f.readlines()
+        alls.extend(line)
+for file in alls:
+    neg_all.write(file)
+    neg_all.write('\n')
