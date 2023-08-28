@@ -1,0 +1,54 @@
+import xml.etree.ElementTree as ET
+from pandas import DataFrame
+import pandas as pd
+import re
+import os
+import xml.dom.minidom
+from openpyxl import Workbook
+folder_path = r"C:\Users\19035\Desktop\实习\py代码\xml\管网标签提取\提取文件" # 修改成要检查的文件夹路径，把所有要检查的xml文件放在这个文件夹中
+file_names = os.listdir(folder_path)
+for file_name in file_names:
+    file_path = os.path.join(folder_path, file_name)
+#获取xml文件地址
+    path = os.path.abspath('.') 
+    data_path = os.path.join(path,file_path) #获取xml文件地址
+    tree = ET.parse(data_path)
+    root = tree.getroot()
+    tagged_text = {}
+    existing_data = set()
+    for element in root.iter():
+        if 'entity_label' in element.attrib:
+            entity_label_info = element.attrib['entity_label']
+            label_values = re.split(r'[@,]', entity_label_info)
+            count = len(label_values)
+            for i in range(0, count-1, 5):
+                if i == count-1:
+                    break
+                database_id = int(label_values[i])  # 第一个数，数据库存储的实际标签信息的ID
+                tag_type = int(label_values[i+1])  # 第二个数，标签类型。0表示标题标签
+                start_pos = int(label_values[i+2])  # 第三个数，标签开始位置
+                end_pos = int(label_values[i+3]) # 第四个数，标签结束位置
+            
+                # 通过entity_label匹配sec元素
+                for sec_element in root.iter('hierarchy'):
+                    entity_label_shibie = sec_element.attrib.get('entity_label', '')
+                    if entity_label_shibie == entity_label_info:
+                        title_element = sec_element.find('hierarchicalTitle')
+                        ps = [element for element in sec_element.iter() if element.tag not in ['hierarchy', 'hierarchicalTitle','reference','list-item']]
+                        content_text = ''.join([re.sub(r"<p>|<\/p>", "", ET.tostring(element, encoding="unicode")) for element in ps if element.text is not None])
+                        content_text = re.sub(r'<P>', '', content_text)
+                        content_text = re.sub(r' ', '', content_text)
+                        content_text = re.sub(r'</P>', ' ', content_text)
+                        content_text = re.sub(r'\n', '', content_text)
+                        content_text = re.sub('<td/>', '<td></td>', content_text)
+                        content_text = re.sub(r'<reference>.*?</reference>', '', content_text)
+                        content_text = re.sub(r'<note>.*?</note>', '', content_text)
+                        content_text = re.sub(r'<example>.*?</example>', '', content_text)
+                        if title_element is not None:
+                            title_text = title_element.text.strip()
+                if tag_type == 0:
+                    tagged_text[database_id] = [title_text[start_pos:end_pos]]
+                    print(tagged_text[database_id])
+                else:
+                    tagged_text[database_id] = [content_text[start_pos:end_pos]]
+                    print(tagged_text[database_id])
