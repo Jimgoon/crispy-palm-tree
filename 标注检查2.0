@@ -1,4 +1,4 @@
-  import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET
 from pandas import DataFrame
 import pandas as pd
 import re
@@ -90,7 +90,6 @@ for file_name in file_names:
                         title_element = sec_element.find('hierarchicalTitle')
                         target_hierarchy = find_hierarchy_by_entity_label(root, entity_label_info)
                         if target_hierarchy is not None:
-    # 将目标层级下所有标签及内容转换为字符串，排除特定的标签
                             content_text = ''.join(xml_to_string(elem) for elem in target_hierarchy if xml_to_string(elem))
                             #print(content_text)
                         else:
