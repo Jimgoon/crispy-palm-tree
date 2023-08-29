@@ -1,0 +1,105 @@
+  import xml.etree.ElementTree as ET
+from pandas import DataFrame
+import pandas as pd
+import re
+import os
+import xml.dom.minidom
+from openpyxl import Workbook
+
+def find_hierarchy_by_entity_label(root, entity_label):
+    hierarchies = root.findall(".//hierarchy")
+    for hierarchy in hierarchies:
+        if hierarchy.get('entity_label') == entity_label:
+            return hierarchy
+        
+
+def xml_to_string(element):
+    # 检查要排除的标签
+    excluded_tags = ['hierarchicalTitle']
+
+    # 如果元素的标签在排除列表中，则返回空字符串
+    if element.tag in excluded_tags:
+        return ''
+
+    # 将元素的标签和文本内容转换为字符串
+    element_string = ET.tostring(element, encoding='unicode', method='xml')
+
+    # 去除字符串中的换行符和空格
+    element_string = element_string.strip().replace('\n', '')
+    
+    # 获取<P>标签内容
+    pattern = r'<P>(.*?)</P>'
+    match = re.search(pattern, element_string)
+    if match:
+        p_content = match.group(1)
+        
+        # 替换<P>标签内容中的空格为保留字符（例如'#'）
+        p_content = re.sub(r'\s', '#', p_content)
+        
+        # 将替换后的<P>标签内容重新插入到字符串中
+        element_string = re.sub(pattern, r'<P>{}</P>'.format(p_content), element_string)
+    
+    # 去除<list-item>标签及其内容
+    element_string = re.sub(r'<list-item[^>]*>', '', element_string)
+    
+    # 替换除<P>标签内容以外的其他空格为空
+    element_string = re.sub(r'(?<!<P>)\s', '', element_string)
+    element_string = re.sub(r'</list-item>', '', element_string)
+    content_text = re.sub(r'<reference>.*?</reference>', '', element_string)
+    content_text = re.sub(r'<note>.*?</note>', '', content_text)
+    content_text = re.sub('<td/>', '<td></td>', content_text)
+    content_text = re.sub(r'<P>', '', content_text)
+    content_text = re.sub(r'</P>', ' ', content_text)
+    content_text = re.sub(r'#', ' ', content_text)
+    element_string = re.sub(r'<example>.*?</example>', '', content_text)
+
+    return element_string
+
+
+     
+folder_path = r"C:\Users\19035\Desktop\实习\py代码\xml\管网标签提取\提取文件"
+file_names = os.listdir(folder_path)
+for file_name in file_names:
+    file_path = os.path.join(folder_path, file_name)
+#获取xml文件地址
+    path = os.path.abspath('.') 
+    data_path = os.path.join(path,file_path) #获取xml文件地址
+    tree = ET.parse(data_path)
+    root = tree.getroot()
+    tagged_text = {}
+    existing_data = set()
+
+    for element in root.iter():
+        if 'entity_label' in element.attrib:
+            entity_label_info = element.attrib['entity_label']
+            label_values = re.split(r'[@,]', entity_label_info)
+            count = len(label_values)
+            for i in range(0, count-1, 5):
+                if i == count-1:
+                    break
+                database_id = int(label_values[i])  # 第一个数，数据库存储的实际标签信息的ID
+                tag_type = int(label_values[i+1])  # 第二个数，标签类型。0表示标题标签
+                start_pos = int(label_values[i+2])  # 第三个数，标签开始位置
+                end_pos = int(label_values[i+3]) # 第四个数，标签结束位置
+                tag_ids = int(label_values[i+4])  # 标签ID
+            
+                # 通过entity_label匹配sec元素
+                for sec_element in root.iter('hierarchy'):
+                    entity_label_shibie = sec_element.attrib.get('entity_label', '')
+                    if entity_label_shibie == entity_label_info:
+                        title_element = sec_element.find('hierarchicalTitle')
+                        target_hierarchy = find_hierarchy_by_entity_label(root, entity_label_info)
+                        if target_hierarchy is not None:
+    # 将目标层级下所有标签及内容转换为字符串，排除特定的标签
+                            content_text = ''.join(xml_to_string(elem) for elem in target_hierarchy if xml_to_string(elem))
+                            #print(content_text)
+                        else:
+                            print("未找到与实体标签匹配的层级结构。")
+                        if title_element is not None:
+                            title_text = title_element.text.strip()
+                if tag_type == 0:
+                    tagged_text[database_id] = [title_text[start_pos:end_pos]]
+                    print(tagged_text[database_id])
+                else:
+                    tagged_text[database_id] = [content_text[start_pos:end_pos]]
+                    print(tagged_text[database_id])
