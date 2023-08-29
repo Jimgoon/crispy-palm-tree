@@ -93,7 +93,7 @@ for file_name in file_names:
                             content_text = ''.join(xml_to_string(elem) for elem in target_hierarchy if xml_to_string(elem))
                             #print(content_text)
                         else:
-                            print("未找到与实体标签匹配的层级结构。")
+                            print("未找到与实体标签匹配的层级结构。")#若出现该语句认为发生错误
                         if title_element is not None:
                             title_text = title_element.text.strip()
                 if tag_type == 0:
